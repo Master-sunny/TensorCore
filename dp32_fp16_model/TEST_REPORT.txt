@@ -1,0 +1,42 @@
+FP16 DP32 model validation
+Environment: Linux x86_64; GCC 13.3.0; C++17
+Reference: Python 3.12 fractions.Fraction; seed=20261016
+Contract: signed width=37, fraction bits=30, truncate magnitude before sign; final FP32 RNE
+
+COMMAND: bash run_tests.sh
+D = sum(32 * (1 * 2)) + 3 = 67
+FP32 bits = 0x42860000
+Emax = 1, common LSB exponent = -29
+CSA operand counts: 32 22 15 10 7 5 4 3 2
+Reduced signed integer = 34359738368
+Alignment truncated = 0
+[PASS] All 65536 FP16 encodings, gradual + FTZ
+[PASS] 9-cycle latency, II=1, bubbles, tags, reset
+[PASS] 10054 independent Fraction golden vectors
+[INFO] Alignment-truncated cases: 5754; bit differences vs exact-dot RNE: 1282
+ALL TESTS PASSED; checks=1367154
+EXIT: 0
+
+COMMAND: g++ -std=c++17 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Iinclude src/dp32.cpp tests/testbench.cpp -o build/testbench_sanitized
+
+EXIT: 0
+
+COMMAND: ./build/testbench_sanitized tests/golden_vectors.txt
+==33==Can't open /proc/32/task for reading.
+==32==LeakSanitizer has encountered a fatal error.
+==32==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1
+==32==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)
+EXIT: 1
+
+Environment adjustment: default LeakSanitizer could not read /proc/task under host tracing.
+Rerun with ASAN_OPTIONS=detect_leaks=0; AddressSanitizer and UndefinedBehaviorSanitizer remain enabled.
+COMMAND: ./build/testbench_sanitized tests/golden_vectors.txt
+[PASS] All 65536 FP16 encodings, gradual + FTZ
+[PASS] 9-cycle latency, II=1, bubbles, tags, reset
+[PASS] 10054 independent Fraction golden vectors
+[INFO] Alignment-truncated cases: 5754; bit differences vs exact-dot RNE: 1282
+ALL TESTS PASSED; checks=1367154
+EXIT: 0
+Optimized and ASan/UBSan test runs passed; leak detection not executed.
+CMake and Windows entry points provided but not executed.
+1282 model/exact-dot differences are expected numerical truncation effects.
